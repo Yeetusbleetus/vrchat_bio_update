@@ -1,9 +1,14 @@
 const vrchat = require('vrchat');
 const fs = require('fs');
 const axios = require('axios');
+const readline = require('readline').createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
 require('dotenv').config();
 
 const workingDir = process.cwd();
+console.log('Working directory: ' + workingDir);
 const configuration = new vrchat.Configuration({
     username: process.env.VRC_USERNAME,
     password: process.env.VRC_PASSWORD,
@@ -30,39 +35,33 @@ async function main() {
         let vrcgame = {
             playtime_forever: 0,
         };
-
-        // find the vrchat game in the recently played games
         for (let i = 0; i < RecentlyPlayedGames.data.response.games.length; i++) {
             if (RecentlyPlayedGames.data.response.games[i].appid == 438100) {
                 vrcgame = RecentlyPlayedGames.data.response.games[i];
             }
         }
-
-        console.log(vrcgame);
-
         let biovariables = {
             "vrcplaytime": Math.round(vrcgame.playtime_forever / 60),
             "current_time": new Date().toLocaleString(),
             "current_date": new Date().toLocaleDateString(),
             "current_world": currentuser.location,
+            "last_activity": currentuser.last_activity
         }
         return biovariables;
     }
 
-
-    console.log(`Logged in as ${currentuser.displayName}`);
-
     async function updateBio(bio) {
+        let vars = await GetBioVariables()
+        for (const [key, value] of Object.entries(vars)) {
+            //console.log(`${key}: ${value}`);
+            bio = bio.replace(`{${key}}`, value);
+        }
         if (bio.length > 512) {
             return console.log('Bio is too long.');
         }
-        let vars = await GetBioVariables()
-        for (const [key, value] of Object.entries(vars)) {
-            bio = bio.replace(`{${key}}`, value);
-        }
-        console.log("new bio: " + bio);
-        //const user = (await UsersApi.updateUser(currentuser.id, {bio: bio})).data;
-        //console.log(`Updated bio to ${user.bio}`);
+        //console.log(`Updating bio to: ${bio}`);
+        const user = (await UsersApi.updateUser(currentuser.id, {bio: bio})).data;
+        console.log("Bio updated.");
     }
 
     // update bio occasionally
