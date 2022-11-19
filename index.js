@@ -14,7 +14,7 @@ const AuthenticationApi = new vrchat.AuthenticationApi(configuration);
 const UsersApi = new vrchat.UsersApi(configuration);
 
 async function main() {
-    const currentuser = (await AuthenticationApi.getCurrentUser()).data;
+    let currentuser = (await AuthenticationApi.getCurrentUser()).data;
 
     if (fs.existsSync(`${workingDir}/bio.txt`)) {
         
@@ -25,6 +25,7 @@ async function main() {
     }
 
     async function GetBioVariables() {
+        currentuser = (await AuthenticationApi.getCurrentUser()).data;
         const RecentlyPlayedGames = await axios.get("http://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key="+process.env.steamapikey+"&steamid="+process.env.steam64id+"&format=json");
         let vrcgame = {
             playtime_forever: 0,
@@ -41,6 +42,9 @@ async function main() {
 
         let biovariables = {
             "vrcplaytime": Math.round(vrcgame.playtime_forever / 60),
+            "current_time": new Date().toLocaleString(),
+            "current_date": new Date().toLocaleDateString(),
+            "current_world": currentuser.location,
         }
         return biovariables;
     }
@@ -52,11 +56,15 @@ async function main() {
         if (bio.length > 512) {
             return console.log('Bio is too long.');
         }
-        console.log(await GetBioVariables())
+        let vars = await GetBioVariables()
+        for (const [key, value] of Object.entries(vars)) {
+            bio = bio.replace(`{${key}}`, value);
+        }
         console.log("new bio: " + bio);
         //const user = (await UsersApi.updateUser(currentuser.id, {bio: bio})).data;
         //console.log(`Updated bio to ${user.bio}`);
     }
+
     // update bio occasionally
     async function updateBioFromFile() {
         const text = fs.readFileSync(`${workingDir}/bio.txt`, 'utf8');
