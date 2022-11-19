@@ -20,6 +20,20 @@ const UsersApi = new vrchat.UsersApi(configuration);
 
 async function main() {
     let currentuser = (await AuthenticationApi.getCurrentUser()).data;
+    //console.log(currentuser)
+    if (currentuser.requiresTwoFactorAuth) {
+        let code = await new Promise((resolve, reject) => {
+            readline.question('Please enter your 2FA code: ', (code) => {
+                resolve(code);
+            });
+        });
+        console.log('Logging in with 2FA...');
+        await AuthenticationApi.verify2FA({
+            code: code
+        });
+    } else {
+        console.log('Logging in...');
+    }
 
     if (fs.existsSync(`${workingDir}/bio.txt`)) {
         
