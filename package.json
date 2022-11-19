@@ -1,0 +1,16 @@
+{
+  "name": "vrchat-bio-updater",
+  "version": "0.0.1",
+  "description": "Automatically updates your vrchat bio with custom info",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.21.4",
+    "dotenv": "^16.0.3",
+    "vrchat": "1.8.0"
+  }
+}
