@@ -9,18 +9,34 @@ require('dotenv').config();
 
 const workingDir = process.cwd();
 console.log('Working directory: ' + workingDir);
+
+let cookie;
+if (fs.existsSync(`${workingDir}/cookie.txt`)) {
+    cookie = fs.readFileSync(`${workingDir}/cookie.txt`, 'utf8');
+}
+
 const configuration = new vrchat.Configuration({
     username: process.env.VRC_USERNAME,
     password: process.env.VRC_PASSWORD,
+    baseOptions: {
+        cookies
+    }
 });
 
+//axios.defaults.headers.common["twoFactorAuth"] = cookie
+
+let extraConfig = {
+    headers: {
+        'twoFactorAuth': cookie
+    }
+}
 
 const AuthenticationApi = new vrchat.AuthenticationApi(configuration);
 const UsersApi = new vrchat.UsersApi(configuration);
 
 async function main() {
-    let currentuser = (await AuthenticationApi.getCurrentUser()).data;
-    //console.log(currentuser)
+    let req = await AuthenticationApi.getCurrentUser(extraConfig)
+    let currentuser = req.data;
     if (currentuser.requiresTwoFactorAuth) {
         let code = await new Promise((resolve, reject) => {
             readline.question('Please enter your 2FA code: ', (code) => {
@@ -28,12 +44,18 @@ async function main() {
             });
         });
         console.log('Logging in with 2FA...');
-        await AuthenticationApi.verify2FA({
+        let resp = await AuthenticationApi.verify2FA({
             code: code
-        });
+        },extraConfig);
+        let cookie = resp.headers['set-cookie'];
+        let accessToken = cookie[0].split(';')[0].split('=')[1];
+        let newreq = await AuthenticationApi.getCurrentUser(extraConfig)
+        currentuser = newreq.data;
+        fs.writeFileSync(`${workingDir}/cookie.txt`, accessToken);
     } else {
         console.log('Logging in...');
     }
+    
 
     if (fs.existsSync(`${workingDir}/bio.txt`)) {
         
@@ -44,7 +66,7 @@ async function main() {
     }
 
     async function GetBioVariables() {
-        currentuser = (await AuthenticationApi.getCurrentUser()).data;
+        currentuser = (await AuthenticationApi.getCurrentUser(extraConfig)).data;
         const RecentlyPlayedGames = await axios.get("http://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key="+process.env.steamapikey+"&steamid="+process.env.steam64id+"&format=json");
         let vrcgame = {
             playtime_forever: 0,
@@ -74,7 +96,7 @@ async function main() {
             return console.log('Bio is too long.');
         }
         //console.log(`Updating bio to: ${bio}`);
-        const user = (await UsersApi.updateUser(currentuser.id, {bio: bio})).data;
+        const user = (await UsersApi.updateUser(currentuser.id, {bio: bio},extraConfig)).data;
         console.log("Bio updated.");
     }
 
