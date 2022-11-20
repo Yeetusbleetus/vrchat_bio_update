@@ -36,9 +36,7 @@ const configuration = new vrchat.Configuration({
 //axios.defaults.headers.common["twoFactorAuth"] = cookie
 
 let extraConfig = {
-    headers: {
-        'twoFactorAuth': cookie
-    }
+    headers: {}
 }
 
 const AuthenticationApi = new vrchat.AuthenticationApi(configuration);
@@ -138,7 +136,7 @@ async function main() {
     }
 
     updateBioFromFile();
-    setInterval(updateBioFromFile, 1000 * 60 * 10);
+    setInterval(updateBioFromFile, 1000 * 60 * 3);
 
 }
 
