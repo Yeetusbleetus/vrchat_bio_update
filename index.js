@@ -11,10 +11,10 @@ const readline = require('readline').createInterface({
 require('dotenv').config();
 
 let speedtest = new FastSpeedtest({
-    token: process.env.fast_apptoken, // required
+    token: "", 
     verbose: false, // default: false
     timeout: 20000, // default: 5000
-    https: true, // default: true
+    https: false, // default: true
     urlCount: 8, // default: 5
     bufferSize: 8, // default: 8
     unit: FastSpeedtest.UNITS.Mbps // default: Bps
