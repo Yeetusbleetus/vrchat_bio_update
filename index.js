@@ -2,6 +2,7 @@ const vrchat = require('vrchat');
 const fs = require('fs');
 const axios = require('axios');
 const FastSpeedtest = require("fast-speedtest-api");
+const fastFolderSize = require('fast-folder-size');
 
 const readline = require('readline').createInterface({
     input: process.stdin,
@@ -14,8 +15,8 @@ let speedtest = new FastSpeedtest({
     token: process.env.fast_apptoken, // required
     verbose: false, // default: false
     timeout: 20000, // default: 5000
-    https: false, // default: true
-    urlCount: 8, // default: 5
+    https: true, // default: true
+    urlCount: 5, // default: 5
     bufferSize: 8, // default: 8
     unit: FastSpeedtest.UNITS.Mbps // default: Bps
 });
@@ -76,6 +77,15 @@ async function main() {
     async function GetBioVariables() {
         currentuser = (await AuthenticationApi.getCurrentUser(extraConfig)).data;
        
+        let scoresaber
+        try {
+            scoresaber = (await axios.get(`https://new.scoresaber.com/api/player/${process.env.steam64id}/full`)).data;
+        } catch (error) {
+            console.log('Error getting scoresaber data.');
+        }
+        scoresaber = scoresaber || {
+            playerInfo: {}
+        }
         let biovariables = {
             "vrcplaytime": async function() {
                 const RecentlyPlayedGames = await axios.get("http://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key="+process.env.steamapikey+"&steamid="+process.env.steam64id+"&format=json");
@@ -112,8 +122,30 @@ async function main() {
                 vrsettings = JSON.parse(vrsettings);
                 //console.log(vrsettings);
                 return vrsettings.LastKnown.HMDModel
+            },
+            "cache_size": async function() {
+                let path = `C:\\Users\\${process.env.username}\\AppData\\LocalLow\\VRChat\\VRChat\\Cache-WindowsPlayer`
+                // get the folder size
+                return new Promise((resolve, reject) => {
+                    fastFolderSize(path, (err, bytes) => {
+                        if (err) {
+                            console.log(err);
+                            reject(err);
+                        } else {
+                            // bytes to gigabytes
+                            let gbs = Math.round(bytes/1024/1024/1024*1000)/1000
+                            console.log('Cache size: ' + gbs + ' GB');
+                            resolve(gbs);
+                        }
+                    });
+                });
+            },
+            "scoresaber_rank": async function() {
+                return scoresaber.playerInfo.rank
+            },
+            "scoresaber_countryrank": async function() {
+                return scoresaber.playerInfo.countryRank
             }
-
         }
         return biovariables;
     }
@@ -122,10 +154,14 @@ async function main() {
         let vars = await GetBioVariables()
         let funcresults = {}
         for (const [key, func] of Object.entries(vars)) {
-            //console.log(`${key}: ${value}`);
-            let value = funcresults[key] || await func();
-            funcresults[key] = value;
-            bio = bio.replace(`{${key}}`, value);
+            // pattern {key}
+            let pattern = new RegExp(`{${key}}`, 'g');
+            if (pattern.test(bio)) {
+                let value = funcresults[key] || await func();
+                funcresults[key] = value;
+                // replace all instances of {key} with the value
+                bio = bio.replace(pattern, value);
+            }
         }
         if (bio.length > 512) {
             return console.log('Bio is too long.');

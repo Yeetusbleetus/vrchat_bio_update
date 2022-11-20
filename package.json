@@ -11,6 +11,7 @@
   "dependencies": {
     "axios": "^0.21.4",
     "dotenv": "^16.0.3",
+    "fast-folder-size": "^1.7.1",
     "fast-speedtest-api": "^0.3.2",
     "vrchat": "1.8.0"
   }
