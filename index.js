@@ -87,7 +87,7 @@ async function main() {
                         vrcgame = RecentlyPlayedGames.data.response.games[i];
                     }
                 }
-                return Math.round(vrcgame.playtime_forever / 60)
+                return Math.round(vrcgame.playtime_forever/6*10)/100;
             },
             "current_time": async function() {
                 return new Date().toLocaleString()
@@ -106,6 +106,12 @@ async function main() {
                 let res = await speedtest.getSpeed()
                 console.log('Speedtest result: ' + res);
                 return Math.round(res*100)/100
+            },
+            "HMD_model": async function() {
+                let vrsettings = fs.readFileSync(`C:\\Program Files (x86)\\Steam\\config\\steamvr.vrsettings`, 'utf8');
+                vrsettings = JSON.parse(vrsettings);
+                //console.log(vrsettings);
+                return vrsettings.LastKnown.HMDModel
             }
 
         }
